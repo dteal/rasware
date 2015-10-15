@@ -20,7 +20,7 @@ void blink(void) {
 // The 'main' function is the entry point of the program
 int main(void) {
     // Initialization code can go here
-    CallEvery(blink, 0, 0.1);
+    CallEvery(blink, 0, 0.5);
     
     while (1) {
         // Runtime code can go here
