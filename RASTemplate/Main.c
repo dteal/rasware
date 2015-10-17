@@ -7,14 +7,14 @@
 // Blink the LED to show we're on
 tBoolean blink_on = true;
 tPWM * green;
-int i = 0;
+float i = 0;
 
 void change_pwm(){
-    i++;
-    if(i > 100){
+    i+=0.01;
+    if(i > 1){
         i = 0;
     }
-    SetPWM(green, i, 10);
+    SetPWM(green, i, 0);
 }
 
 void blink(void) {
