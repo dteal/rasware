@@ -1,9 +1,6 @@
 #include <RASLib/inc/common.h>
 #include <RASLib/inc/gpio.h>
 #include <RASLib/inc/time.h>
-#include <math.h>
-
-//Testing the test branch
 
 // Blink the LED to show we're on
 tBoolean blink_on = true;
@@ -12,7 +9,7 @@ void blink(void) {
     SetPin(PIN_B0, blink_on);
     blink_on = !blink_on;
     SetPin(PIN_F1, blink_on);
-    //SetPin(PIN_F2, blink_on);
+    SetPin(PIN_F2, blink_on);
     SetPin(PIN_F3, blink_on);
 }
 
@@ -21,10 +18,8 @@ void blink(void) {
 int main(void) {
     // Initialization code can go here
     CallEvery(blink, 0, 0.1);
-    
     while (1) {
         // Runtime code can go here
         Printf("Hello World!\n");
-        
     }
 }
