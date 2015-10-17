@@ -17,7 +17,12 @@ void blink(void) {
 // The 'main' function is the entry point of the program
 int main(void) {
     // Initialization code can go here
+<<<<<<< HEAD
     CallEvery(blink, 0, 0.1);
+=======
+    CallEvery(blink, 0, 0.5);
+    
+>>>>>>> 38721293b469304b65d081ec8dd8ed66381b8629
     while (1) {
         // Runtime code can go here
         Printf("Hello World!\n");
