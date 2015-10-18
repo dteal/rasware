@@ -2,6 +2,7 @@
 #include <RASLib/inc/gpio.h>
 #include <RASLib/inc/time.h>
 #include <RASLib/inc/pwm.h>
+#include <RASLib/inc/motor.h>
 #include <math.h>
 
 // Blink the LED to show we're on
@@ -15,6 +16,9 @@ float light_offset = 1;
 float light_cycle_time = 1;
 float light_refresh_step = 0.01;
 float light_step = 1;
+
+tMotor * left;
+tMotor * right;
 
 void init(){
     light_offset = 3.14159*2/3;
@@ -49,6 +53,12 @@ int main(void) {
     blue = InitializePWM(PIN_F2, 500);
 
     CallEvery(change_pwm, 0, light_refresh_step);
+
+    left = InitializeServoMotor(PIN_A2, false);
+    right = InitializeServoMotor(PIN_A3, false);
+
+    SetMotor(left, 1);
+    SetMotor(right, 0.5);
 
     while (1) {
         Printf("Hello World!\n");
