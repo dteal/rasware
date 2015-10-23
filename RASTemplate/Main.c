@@ -24,6 +24,9 @@ float light_step = 1;
 tMotor * left_motor;
 tMotor * right_motor;
 tADC * ir_sensor;
+int ir_average_length = 10;
+float ir_average_table[10] = {0};
+int ir_average_index = 0;
 // ==============================
 
 // Initialize light variables
@@ -46,8 +49,18 @@ void change_led_pwm(){
 // Adjusts motor speeds based on IR sensor reading
 void adjust_motor_power(){
 
-    // Get value from IR sensor
-    float value = ADCRead(ir_sensor);
+    // Get value from IR sensor and average
+    ir_average_table[ir_average_index] = ADCRead(ir_sensor);
+    ir_average_index++;
+    if(ir_average_index>=ir_average_length+1){
+        ir_average_index = 0;
+    }
+    float sum = 0;
+    int i = 0;
+    for(i; i < ir_average_length; i++){
+        sum += ir_average_table[i];
+    }
+    float value = sum / ir_average_length;
 
     // The ideal IR sensor value
     float middle_value = 0.5;
