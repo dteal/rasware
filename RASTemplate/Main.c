@@ -46,11 +46,23 @@ void change_led_pwm(){
     SetPWM(blue, sin(light_counter-light_offset)*0.5+0.5, 0);
 }
 
+float coerce(float val, float min, float max){
+    if(val < min){
+        val=min;
+    }
+    if(val > max){
+        val=max;
+    }
+    return val;
+}
+
 // Adjusts motor speeds based on IR sensor reading
 void adjust_motor_power(){
 
     // Get value from IR sensor and average
-    ir_average_table[ir_average_index] = ADCRead(ir_sensor);
+    float temp = ADCRead(ir_sensor);
+    //Printf("%f\n", temp);
+    ir_average_table[ir_average_index] = temp;
     ir_average_index++;
     if(ir_average_index>=ir_average_length+1){
         ir_average_index = 0;
@@ -61,25 +73,46 @@ void adjust_motor_power(){
         sum += ir_average_table[i];
     }
     float value = sum / ir_average_length;
+    value = temp;
+
+    // 12"  .3
+    // 9"   .35
+    // 6"   .54
+    // 5"   .62
+    // 4"   .74
+    // 3"   .87
+    // 2"   .94
+    // 1"   (fluctuates)
 
     // The ideal IR sensor value
-    float middle_value = 0.5;
+    float middle_value = 0.74;
+    float signal_width = 0.2;
+    if(value < middle_value-signal_width){
+        value = middle_value-signal_width;
+    }
+    if(value > middle_value+signal_width){
+        value = middle_value+signal_width;
+    }
+    value -= middle_value;
 
     // How much the motors react to the IR sensor
-    float responsiveness = 0.5;
+    float responsiveness =2.5;// 2.25;
+    value *= responsiveness;
+    //Printf("%f\n", value);
 
     // How fast the robot drives straight
-    float speed = 0.5;
+    float speed = 0.5;//55;
 
+    Printf("@%f\n", (speed+value));
     // Adjust motor speeds
-    SetMotor(left_motor, (value-middle_value)*responsiveness+speed);
-    SetMotor(right_motor, (value+middle_value)*responsiveness+speed);
+    SetMotor(left_motor, coerce(speed-value, 0, 0.99));
+    SetMotor(right_motor, coerce(speed+value, 0, 0.99));
 }
 
 int main(void) {
 
     // Initialize IR sensor
-    ir_sensor = InitializeADC(PIN_A4);
+    ir_sensor = InitializeADC(PIN_D0);
 
     // Initialize RGB LEDs
     green = InitializePWM(PIN_F3, 500);
@@ -88,15 +121,21 @@ int main(void) {
     initialize_led_variables();
 
     // Initialize motors
-    left_motor = InitializeServoMotor(PIN_A2, false);
-    right_motor = InitializeServoMotor(PIN_A3, false);
+    left_motor = InitializeServoMotor(PIN_E3, false);
+    right_motor = InitializeServoMotor(PIN_E2, true);
 
     // Start LED color-changing
-    CallEvery(change_led_pwm, 0, light_refresh_step);
+    //CallEvery(change_led_pwm, 0, light_refresh_step);
 
     // Start line following
-    ADCBackgroundRead(ir_sensor, adjust_motor_power, NULL);
+    //ADCBackgroundRead(ir_sensor, adjust_motor_power, NULL);
 
+    //SetMotor(left_motor, 0.5);
+    //SetMotor(right_motor, 0.5);
+    //CallEvery(adjust_motor_power, 0, 0.1);
     // Infinite loop so that program keeps running
-    while(1){}
+    while(1){
+    adjust_motor_power();
+    //Printf("Hello World!\n");
+    }
 }
