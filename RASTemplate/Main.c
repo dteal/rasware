@@ -1,31 +1,74 @@
+/* Main.h
+ *
+ * This is the source code for the robot "Ultron" built for
+ * The University of Texas at Austin's IEEE RAS fall 2015
+ * Robotathon competition.
+ *
+ * The robot has a left and right drive motor, two intake motors,
+ * and one marble/ping-pong ball release motor. It also uses two
+ * IR distance sensors and a line sensing phototransistor array.
+ *
+ * This program assumes the robot is placed in front of its goal
+ * facing right with the line sensing array behind the black
+ * line. It then drives across the line to calibrate the array,
+ * then begins a scoring loop in which it follows the wall on the
+ * right-hand side with the intake runing, and pauses to score
+ * whenever the line sensor array detects a goal.
+ *
+ * Authors: Yazan Alatrach, Angelique Bautista, Daniela Barrios,
+ *          Angelique Bautista, Shrikar Murthy, and Daniel Teal.
+ * UT RAS Mentor: CJ Pleiter
+ */
+
+#include <RASLib/inc/adc.h>
 #include <RASLib/inc/common.h>
 #include <RASLib/inc/gpio.h>
-#include <RASLib/inc/time.h>
-#include <RASLib/inc/pwm.h>
-#include <RASLib/inc/motor.h>
-#include <RASLib/inc/adc.h>
 #include <RASLib/inc/linesensor.h>
+#include <RASLib/inc/motor.h>
+#include <RASLib/inc/pwm.h>
+#include <RASLib/inc/servo.h>
+#include <RASLib/inc/time.h>
 #include <math.h>
-
-int led = 1;
-
-/* define led objects if necessary */
-#define LIGHTS
-#ifdef LIGHTS
-    tPWM * green;
-    tPWM * red;
-    tPWM * blue;
-#endif
 
 /* define io components */
 tMotor * left_motor;
 tMotor * right_motor;
 tMotor * in_motor;
 tMotor * brush_motor;
+tServo * release_servo;
+
 tADC * side_ir_sensor;
 tADC * front_ir_sensor;
 tLineSensor * line_sensor;
-tPin * line_led_pin;
+
+tPWM * red_led;
+tPWM * green_led;
+tPWM * blue_led;
+
+/* define pin connections */
+#define left_motor_pin PIN_B7
+#define right_motor_pin PIN_B6
+#define in_motor_pin PIN_A4
+#define brush_motor_pin PIN_E0
+#define release_servo_pin PIN_B2
+
+#define side_ir_sensor_pin PIN_E4
+#define front_ir_sensor_pin PIN_E5
+#define ls_pin_1 PIN_B4
+#define ls_pin_2 PIN_E3
+#define ls_pin_3 PIN_E2
+#define ls_pin_4 PIN_E1
+#define ls_pin_5 PIN_D3
+#define ls_pin_6 PIN_D2
+#define ls_pin_7 PIN_D1
+#define ls_pin_8 PIN_D0
+
+#define red_led_pin PIN_F1
+#define green_led_pin PIN_F3
+#define blue_led_pin PIN_F2
+
+
+
 
 /* helper function to fit a value between min and max */
 float coerce(float val, float min, float max){
