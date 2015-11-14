@@ -41,7 +41,7 @@ tADC * side_ir_sensor;
 tADC * front_ir_sensor;
 tLineSensor * line_sensor;
 
-tPWM * red_led;
+tPin * red_led;
 tPWM * green_led;
 tPWM * blue_led;
 
@@ -49,7 +49,7 @@ tPWM * blue_led;
 #define left_motor_pin PIN_B7
 #define right_motor_pin PIN_B6
 #define in_motor_pin PIN_A4
-#define brush_motor_pin PIN_E0
+#define brush_motor_pin PIN_A3
 #define release_servo_pin PIN_B2
 
 #define side_ir_sensor_pin PIN_E4
@@ -63,13 +63,53 @@ tPWM * blue_led;
 #define ls_pin_7 PIN_D1
 #define ls_pin_8 PIN_D0
 
-#define red_led_pin PIN_F1
+#define red_led_pin PIN_F3
 #define green_led_pin PIN_F3
 #define blue_led_pin PIN_F2
 
+/* global variables */
+int led_state = 1;
+
+/* function forward declarations */
+void initialize_pins();
+void blink();
+
+/* main function */
+int main(void){
+    initialize_pins();
+    //SetMotor(left_motor, 0.0);
+    //SetMotor(right_motor, 0.0);
+
+   // while(GetPin(PIN_F4)){
+   // }
+
+    CallEvery(blink, 0, 1);
+    SetMotor(in_motor,1.0);
+    //SetMotor(brush_motor, 0.5);
+    while(1){
+    }
+}
+
+void initialize_pins(){
+    //left_motor = InitializeServoMotor(left_motor_pin, false);
+    //right_motor = InitializeServoMotor(right_motor_pin, true);
+    in_motor = InitializeServoMotor(in_motor_pin, true);
+    //brush_motor = InitializeServoMotor(brush_motor_pin, true);
+     release_servo = InitializeServo(release_servo_pin);
+
+    side_ir_sensor = InitializeADC(side_ir_sensor_pin);
+    front_ir_sensor = InitializeADC(front_ir_sensor_pin);
+}
+
+void blink(){
+    SetPin(red_led_pin, led_state);
+ //   SetServo(release_servo, led_state * 0.5 + 0.25);
+    led_state = !led_state;
+}
 
 
-
+/* == EVERYTHING BELOW THIS CAN BE IGNORED: OLD CODE == */
+#ifdef OLD_CODE
 /* helper function to fit a value between min and max */
 float coerce(float val, float min, float max){
     if(val < min){
@@ -99,9 +139,7 @@ void adjust_motor_power(){
     /* 1"   (fluctuates) */
     /* end of table */
 
-    #define USE_OLD_CODE
     /* old line following code */
-    #ifdef USE_OLD_CODE
         // The ideal IR sensor value
         float middle_value = 0.5;
         float signal_width = 0.3;
@@ -118,7 +156,6 @@ void adjust_motor_power(){
         //Printf("%f\n", value);
         // How fast the robot drives straight
         float speed = 0.5;//55;
-    #endif
 
     Printf("%f - %f\n", side_value, front_value);
 
@@ -152,14 +189,12 @@ SetMotor(right_motor, 0);}
     //SetMotor(left_motor, value);
     //SetMotor(right_motor, value);
 }
-
-void blink(void){
+void blink2(void){
 SetPin(PIN_F1, led);
 led=!led;
    }
-
 /* The program's main function */
-int main(void) {
+int main2(void) {
 
     /* initialize motors */
     left_motor = InitializeServoMotor(PIN_E3, false);
@@ -179,28 +214,28 @@ InitializeGPIOLineSensor(PIN_A3,PIN_A4,PIN_B6,PIN_B7,PIN_C6,PIN_F0,PIN_C7,PIN_B2
     SetPin(PIN_A2, 1);
 
     /* turn on light code if needed */
-    #ifdef LIGHTS
+
         /* initialize rgb leds */
         //green = InitializePWM(PIN_F3, 500);
         red = InitializePWM(PIN_F1, 500);
         //blue = InitializePWM(PIN_F2, 500);
-    #endif
 
     //#define MOTOR_TEST
     /* drive motors straight if needed */
-    #ifdef MOTOR_TEST
+
         SetMotor(left_motor, 1);
         SetMotor(right_motor, 1);
-    #endif
 
-//    CallEvery(blink,0,1);
-
+    CallEvery(blink,0,1);
+    CallEvery(blink, 0, 1);
     /* infinite loop that program runs inside of */
     while(1){
-      follow_line();
+      //follow_line();
   //    Printf("Hi");
     }
    
 } /* end of main function */
 
 /* ========== end of program ========== */
+
+#endif
