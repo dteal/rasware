@@ -83,7 +83,6 @@ int main(void){
     initialize_pins();
     ADCReadContinuously(side_ir_sensor, 0.1);
     ADCReadContinuously(front_ir_sensor, 0.1);
-    LineSensorReadContinuously(line_sensor, 0.1);
     stop();
 
     /* react to button release */
@@ -103,8 +102,9 @@ void initialize_pins(){
     release_servo = InitializeServo(release_servo_pin);
     side_ir_sensor = InitializeADC(side_ir_sensor_pin);
     front_ir_sensor = InitializeADC(front_ir_sensor_pin);
-    line_sensor = InitializeGPIOLineSensor(ls_pin_1, ls_pin_2, ls_pin_3, 
-ls_pin_4, ls_pin_5, ls_pin_6, ls_pin_7, ls_pin_8);
+    /*line_sensor = InitializeGPIOLineSensor(ls_pin_1, ls_pin_2, 
+ls_pin_3, 
+ls_pin_4, ls_pin_5, ls_pin_6, ls_pin_7, ls_pin_8);*/
 }
 
 /* blinks led to indicate working state */
@@ -126,9 +126,9 @@ void start(){
 }
 
 void stop(){
-    //SetMotor(in_motor, 0);
+    SetMotor(in_motor, 0);
     //SetMotor(left_motor, 0);
-    SetMotor(right_motor, 0);
+    //SetMotor(right_motor, 0);
 }
 
 void react_to_button(){
