@@ -63,49 +63,87 @@ tPWM * blue_led;
 #define ls_pin_7 PIN_D1
 #define ls_pin_8 PIN_D0
 
-#define red_led_pin PIN_F3
+#define red_led_pin PIN_F1
 #define green_led_pin PIN_F3
 #define blue_led_pin PIN_F2
 
 /* global variables */
 int led_state = 1;
+int running = 0;
 
 /* function forward declarations */
 void initialize_pins();
 void blink();
+void start();
+void stop();
+void react_to_button();
 
 /* main function */
 int main(void){
     initialize_pins();
-    //SetMotor(left_motor, 0.0);
-    //SetMotor(right_motor, 0.0);
+    ADCReadContinuously(side_ir_sensor, 0.1);
+    ADCReadContinuously(front_ir_sensor, 0.1);
+    LineSensorReadContinuously(line_sensor, 0.1);
+    stop();
 
-   // while(GetPin(PIN_F4)){
-   // }
-
+    /* react to button release */
+    CallOnPinRising(react_to_button, 0, PIN_F0);
     CallEvery(blink, 0, 1);
-    SetMotor(in_motor,1.0);
-    //SetMotor(brush_motor, 0.5);
+
     while(1){
     }
 }
 
+/* intializes io objects */
 void initialize_pins(){
     //left_motor = InitializeServoMotor(left_motor_pin, false);
     //right_motor = InitializeServoMotor(right_motor_pin, true);
     in_motor = InitializeServoMotor(in_motor_pin, true);
     //brush_motor = InitializeServoMotor(brush_motor_pin, true);
-     release_servo = InitializeServo(release_servo_pin);
-
+    release_servo = InitializeServo(release_servo_pin);
     side_ir_sensor = InitializeADC(side_ir_sensor_pin);
     front_ir_sensor = InitializeADC(front_ir_sensor_pin);
+    line_sensor = InitializeGPIOLineSensor(ls_pin_1, ls_pin_2, ls_pin_3, 
+ls_pin_4, ls_pin_5, ls_pin_6, ls_pin_7, ls_pin_8);
 }
 
+/* blinks led to indicate working state */
 void blink(){
-    SetPin(red_led_pin, led_state);
- //   SetServo(release_servo, led_state * 0.5 + 0.25);
+    SetPin(green_led_pin, led_state);
+    Printf("Working... %d", led_state);
+    float val_side = ADCRead(side_ir_sensor);
+    float val_front = ADCRead(front_ir_sensor);
+    //Printf("\tSide: %f\tFront: %f\n",val_side,val_front);
+    //float line_values[8] = {0,0,0,0,0,0,0,0};
+    //LineSensorReadArray(line_sensor, line_values);
+    //float line_value = line_values[3];
+    //Printf("\t%f\n", line_value);
     led_state = !led_state;
 }
+
+void start(){
+    SetMotor(in_motor, 1);
+}
+
+void stop(){
+    //SetMotor(in_motor, 0);
+    //SetMotor(left_motor, 0);
+    SetMotor(right_motor, 0);
+}
+
+void react_to_button(){
+    tBoolean state = GetPin(PIN_F0);
+    if(running){
+        Printf("Stopping...\n");
+        stop();
+    }else{
+        Printf("Starting...\n");
+        start();
+    }
+    running = !running;
+}
+
+
 
 
 /* == EVERYTHING BELOW THIS CAN BE IGNORED: OLD CODE == */
