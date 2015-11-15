@@ -39,6 +39,8 @@ tServo * release_servo;
 
 tADC * side_ir_sensor;
 tADC * front_ir_sensor;
+tADC * goal_ir_sensor;
+tADC * line_sensor_8;
 tLineSensor * line_sensor;
 
 tPin * red_led;
@@ -52,8 +54,9 @@ tPWM * blue_led;
 #define brush_motor_pin PIN_A3
 #define release_servo_pin PIN_B2
 
-#define side_ir_sensor_pin PIN_E4
-#define front_ir_sensor_pin PIN_E5
+#define side_ir_sensor_pin PIN_E5
+#define front_ir_sensor_pin PIN_E4
+#define goal_ir_sensor_pin PIN_B4
 #define ls_pin_1 PIN_B4
 #define ls_pin_2 PIN_E3
 #define ls_pin_3 PIN_E2
@@ -67,52 +70,152 @@ tPWM * blue_led;
 #define green_led_pin PIN_F3
 #define blue_led_pin PIN_F2
 
+/* magic numbers */
+float release_marbles = 1;
+float release_pp_balls = 0.25;
+float release_nothing = 0.8;
+
 /* global variables */
-int led_state = 1;
 int running = 0;
+int side = 0;
+/*
+ * State 0: Wait for button press.
+ * State 1: Follow wall, check line sensor.
+ * State 2: Score.
+*/
 
 /* function forward declarations */
 void initialize_pins();
-void blink();
-void start();
-void stop();
 void react_to_button();
+void dispense();
+
+void dispense(){
+    SetPin(blue_led_pin, 1);
+
+    SetMotor(in_motor, 0);
+    SetMotor(brush_motor, 0);
+    SetMotor(left_motor,-1);
+    SetMotor(right_motor,1);
+    Wait(1);
+    SetMotor(left_motor, 0);
+    SetMotor(right_motor, 0);
+    if(side){
+        SetServo(release_servo, release_marbles);
+        SetPin(green_led_pin, 1);
+        SetPin(red_led_pin, 0);
+    }else{
+        SetServo(release_servo, release_pp_balls);
+        SetPin(green_led_pin, 0);
+        SetPin(red_led_pin, 1);
+    }
+    Wait(3);
+    SetMotor(left_motor, 1);
+    SetMotor(right_motor,-1);
+    Wait(1);
+    SetMotor(left_motor, 1);
+    SetMotor(right_motor, 1);
+    SetMotor(in_motor, 1);
+    SetMotor(brush_motor, 1);
+    Wait(1);
+    SetPin(blue_led_pin, 0);
+    side = !side;
+}
 
 /* main function */
 int main(void){
     initialize_pins();
-    ADCReadContinuously(side_ir_sensor, 0.1);
-    ADCReadContinuously(front_ir_sensor, 0.1);
-    stop();
 
-    /* react to button release */
-    CallOnPinRising(react_to_button, 0, PIN_F0);
-    CallEvery(blink, 0, 1);
+    ADCReadContinuously(side_ir_sensor, 0.01);
+    ADCReadContinuously(front_ir_sensor, 0.01);
+    //ADCReadContinuously(line_sensor_8, 0.01);
+    SetPin(PIN_D1, 1);
+    SetPin(PIN_D2, 0);
 
     while(1){
+        float value = ADCRead(goal_ir_sensor);
+        Printf("%f\n", value);
+    }
+
+    /* wait for button press */
+    CallOnPinRising(react_to_button, 0, PIN_F0);
+    while(!running){}
+
+    //dispense();
+
+    /* turn on motors */
+    SetServo(release_servo, release_nothing);
+    SetMotor(in_motor, 1);
+    SetMotor(brush_motor, 1);
+
+    float reading[50] = {};
+    int idx = 0;
+    int max = 50;
+
+    while(1){
+        if(running){
+            float side_value = ADCRead(side_ir_sensor);
+            float front_value = ADCRead(front_ir_sensor);
+            //LineSensorReadArray(line_sensor, line_value);
+            //float value = ADCRead(line_sensor_8);
+            float value = 0;
+            reading[idx] = value;
+            idx+=1;
+            if(idx == max){
+                idx = 0;
+            }
+            float count = 0;
+            for(int i = 0; i < max; i++){
+                count += reading[i];
+            }
+            count /= max;
+        //for(int n = 2; n < 8; n++){
+        //Printf("%f\t", line_value[n]);
+        //}
+
+            if(count > 0.45){
+                dispense();
+            }
+
+            Printf("%f\n",count);
+            if(side_value > 0.94 || front_value > 0.7){
+                SetMotor(left_motor, -1);
+            }else{
+                SetMotor(left_motor, 1);
+            }
+            SetMotor(right_motor, 1);
+        }
     }
 }
 
 /* intializes io objects */
 void initialize_pins(){
-    //left_motor = InitializeServoMotor(left_motor_pin, false);
-    //right_motor = InitializeServoMotor(right_motor_pin, true);
+    left_motor = InitializeServoMotor(left_motor_pin, false);
+    right_motor = InitializeServoMotor(right_motor_pin, true);
     in_motor = InitializeServoMotor(in_motor_pin, true);
-    //brush_motor = InitializeServoMotor(brush_motor_pin, true);
+    brush_motor = InitializeServoMotor(brush_motor_pin, true);
     release_servo = InitializeServo(release_servo_pin);
     side_ir_sensor = InitializeADC(side_ir_sensor_pin);
     front_ir_sensor = InitializeADC(front_ir_sensor_pin);
-    /*line_sensor = InitializeGPIOLineSensor(ls_pin_1, ls_pin_2, 
+    goal_ir_sensor = InitializeADC(goal_ir_sensor_pin);
+    //line_sensor_8 = InitializeADC(ls_pin_8);
+/*    line_sensor = InitializeGPIOLineSensor(ls_pin_1, ls_pin_2, 
 ls_pin_3, 
 ls_pin_4, ls_pin_5, ls_pin_6, ls_pin_7, ls_pin_8);*/
 }
 
 /* blinks led to indicate working state */
+/*
 void blink(){
-    SetPin(green_led_pin, led_state);
-    Printf("Working... %d", led_state);
-    float val_side = ADCRead(side_ir_sensor);
-    float val_front = ADCRead(front_ir_sensor);
+    Printf("%f\n",GetTime());
+    if(side){
+    //SetPin(green_led_pin, led_state);
+    //SetPin(red_led_pin, 0);
+    }else{
+    //SetPin(green_led_pin, 0);
+    //SetPin(red_led_pin, led_state);
+    }
+    //Printf("Working... %d\n", led_state);
+    //float val_front = ADCRead(front_ir_sensor);
     //Printf("\tSide: %f\tFront: %f\n",val_side,val_front);
     //float line_values[8] = {0,0,0,0,0,0,0,0};
     //LineSensorReadArray(line_sensor, line_values);
@@ -120,25 +223,13 @@ void blink(){
     //Printf("\t%f\n", line_value);
     led_state = !led_state;
 }
-
-void start(){
-    SetMotor(in_motor, 1);
-}
-
-void stop(){
-    SetMotor(in_motor, 0);
-    //SetMotor(left_motor, 0);
-    //SetMotor(right_motor, 0);
-}
+*/
 
 void react_to_button(){
-    tBoolean state = GetPin(PIN_F0);
     if(running){
         Printf("Stopping...\n");
-        stop();
     }else{
         Printf("Starting...\n");
-        start();
     }
     running = !running;
 }
