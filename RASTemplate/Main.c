@@ -64,27 +64,32 @@ float release_pp_balls = 0.25; // position to release pp balls
 float release_nothing = 0.8; // position to hold on to both
 float side_max = 0.93; // distance to side wall
 float front_max = 0.7; // distance to front wall
-float goal_max = 0.2; // difference in between goal/wall distance
+float goal_max = 0.3; // difference in between goal/wall distance
 #define AVG_LEN 1000 // number of measurements averaged
-float goal_drive_time = 10;
+float goal_min_time = 10; // minimum time between goals
+float goal_drive_time = 2; // time to drive to middle of goal
+//#define WAIT_FOR_BUTTON_TO_START
 
 // global variables
 int running = 0; // tracks state of program
 int side = 0; // tracks current side of field
-int reset_ir_flag = 1;
-float front_avg[AVG_LEN] = {};
-float side_avg[AVG_LEN] = {};
-float goal_avg[AVG_LEN] = {};
-int avg_idx = 0;
-float goal_detect_time = 0;
+int reset_ir_flag = 1; // tracks ir averaging restarts
+float front_avg[AVG_LEN] = {}; // averages front ir sensor values
+float side_avg[AVG_LEN] = {}; // averages side ir sensor values
+float goal_avg[AVG_LEN] = {}; // averages goal ir sensor values
+int avg_idx = 0; // keepts track of current position in averaging arrays
+float last_score_time = 0; // time since last goal
+float goal_detect_time = 0; // time since potential goal detected
+float goal_value_sum = 0; // sum of goal readings since goal detected
+int num_goal_values = 0; // number of goal readings in that time
+int in_goal = 0; // whether robot is possibly in front of goal
 
 // function forward declarations
 void initialize_pins(); // initializes io components
 void react_to_button(); // triggers on button press
-void dispense(); // scores balls in goal
 float coerce(float n, float min, float max, float val);
-float average(float * array, int length);
-void fill_array(float * array, int length, float value);
+float average(float * array, int length); // averages array
+void fill_array(float * array, int length, float value); // fills array
 
 // main function
 int main(void){
@@ -99,9 +104,13 @@ int main(void){
     // turn on status led
     SetPin(green_led_pin, 1);
 
-    // wait for button press
-    CallOnPinRising(react_to_button, 0, PIN_F0);
-    while(!running){}
+    #ifdef WAIT_FOR_BUTTON_TO_START
+        // wait for button press
+        CallOnPinRising(react_to_button, 0, PIN_F0);
+        while(!running){}
+    #else
+        running=1;
+    #endif
 
     // turn on motors
     SetServo(release_servo, release_nothing);
@@ -109,7 +118,7 @@ int main(void){
     SetMotor(brush_motor, 1);
 
     // initialize timing variable
-    goal_detect_time = GetTime();
+    last_score_time = GetTime();
 
     // main loop
     while(1){
@@ -150,52 +159,64 @@ int main(void){
                 goal_dist = average(goal_avg, AVG_LEN);
             }
 
-            // score or follow wall
-            if(side_value - goal_value > goal_max && 
-GetTime() - goal_detect_time > goal_drive_time){ // score
-                // set status leds
-                SetPin(red_led_pin, 0);
-                SetPin(green_led_pin, 0);
-                SetPin(blue_led_pin, 1);
-                // drive to center of goal
-                SetMotor(left_motor, 1);
-                SetMotor(right_motor, 1);
-                Wait(2);
-                // turn off intake
-                SetMotor(in_motor, 0);
-                SetMotor(brush_motor, 0);
-                // turn left
-                SetMotor(left_motor, -1);
-                SetMotor(right_motor, 1);
-                Wait(1.5);
-                // score
-                SetMotor(left_motor, 0);
-                SetMotor(right_motor, 0);
-                if(side){
-                    SetServo(release_servo, release_marbles);
-                }else{
-                    SetServo(release_servo, release_pp_balls);
-                }
-                Wait(3);
-                SetServo(release_servo, release_nothing);
-                // turn right
-                SetMotor(left_motor, 1);
-                SetMotor(right_motor, -1);
-                Wait(1.5);
-                // turn intake on
-                SetMotor(in_motor, 1);
-                SetMotor(brush_motor, 1);
-                // set status leds
-                SetPin(blue_led_pin, 0);
-                if(side){
-                    SetPin(green_led_pin, 0);
-                    SetPin(red_led_pin, 1);
-                }else{
-                    SetPin(green_led_pin, 1);
-                    SetPin(red_led_pin, 0);
-                }
-                side = !side;
+            if(in_goal){
+                goal_value_sum += (side_value - goal_value);
+                num_goal_values++;
+            }
+
+            // detect potential goal
+            if(!in_goal && side_value - goal_value > goal_max && 
+GetTime() - goal_detect_time > goal_drive_time){
                 goal_detect_time = GetTime();
+                in_goal = 1;
+                goal_value_sum = 0;
+                num_goal_values = 0;
+            }
+
+            if(in_goal && GetTime() - goal_detect_time > 
+goal_drive_time){ // score
+                if(goal_value_sum/num_goal_values > goal_max){
+                    // set status leds
+                    SetPin(red_led_pin, 0);
+                    SetPin(green_led_pin, 0);
+                    SetPin(blue_led_pin, 1);
+                    // turn off intake
+                    SetMotor(in_motor, 0);
+                    SetMotor(brush_motor, 0);
+                    // turn left
+                    SetMotor(left_motor, -1);
+                    SetMotor(right_motor, 1);
+                    Wait(1.5);
+                    // score
+                    SetMotor(left_motor, 0);
+                    SetMotor(right_motor, 0);
+                    if(side){
+                        SetServo(release_servo, release_marbles);
+                    }else{
+                        SetServo(release_servo, release_pp_balls);
+                    }
+                    Wait(3);
+                    SetServo(release_servo, release_nothing);
+                    // turn right
+                    SetMotor(left_motor, 1);
+                    SetMotor(right_motor, -1);
+                    Wait(1.5);
+                    // turn intake on
+                    SetMotor(in_motor, 1);
+                    SetMotor(brush_motor, 1);
+                    // set status leds
+                    SetPin(blue_led_pin, 0);
+                    if(side){
+                        SetPin(green_led_pin, 0);
+                        SetPin(red_led_pin, 1);
+                    }else{
+                        SetPin(green_led_pin, 1);
+                        SetPin(red_led_pin, 0);
+                    }
+                    side = !side;
+                    last_score_time = GetTime();
+                }
+                in_goal = 0;
             }else{ // follow wall
                 if(side_value > side_max || front_value > front_max){
                     SetMotor(left_motor, -1);
@@ -234,6 +255,7 @@ float coerce(float n, float min, float max, float val){
     return n;
 }
 
+// averages values in array
 float average(float * array, int length){
     float count = 0;
     for(int i = 0; i < length; i++){
@@ -243,10 +265,11 @@ float average(float * array, int length){
     return count;
 }
 
+// fills array with given value
 void fill_array(float * array, int length, float value){
     for(int i = 0; i < length; i++){
         array[i] = value;
     }
 }
 
-/* end of program */
+// end of program
