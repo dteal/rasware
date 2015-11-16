@@ -14,7 +14,7 @@ The robot has a left and right drive motor, two intake motors, and one marble/pi
 
 This program assumes the robot is placed in front of its goal facing right. It runs a loop in which it follows the wall on the right-hand side with the intake runing, and pauses to score whenever the third IR sensor detects a goal by its difference from the normal side IR sensor.
 
-Sensor values are continually averaged for more reliable values. Additionally, several sanity checks are in place: after a goal is detected, it must be present (on average) for some time before triggering a scoring response. This avoids false positives. Also, there is a minimum time between different goals that must be met.
+Sensor values are continually averaged for more reliable values. Additionally, several sanity checks are in place: after a goal is detected, it must be present (on average) for some time before triggering a scoring response. This avoids false positives. Also, there is a minimum time constraint between different goals that must be met.
 
 Robotathon Setup Instructions
 -----------------------------
