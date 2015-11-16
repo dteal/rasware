@@ -166,7 +166,7 @@ int main(void){
 
             // detect potential goal
             if(!in_goal && side_value - goal_value > goal_max && 
-GetTime() - goal_detect_time > goal_drive_time){
+GetTime() - last_score_time > goal_drive_time){
                 goal_detect_time = GetTime();
                 in_goal = 1;
                 goal_value_sum = 0;
