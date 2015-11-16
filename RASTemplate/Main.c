@@ -171,15 +171,15 @@ GetTime() - last_score_time > goal_drive_time){
                 in_goal = 1;
                 goal_value_sum = 0;
                 num_goal_values = 0;
+                // set status leds
+                SetPin(red_led_pin, 0);
+                SetPin(green_led_pin, 0);
+                SetPin(blue_led_pin, 1);
             }
 
             if(in_goal && GetTime() - goal_detect_time > 
 goal_drive_time){ // score
                 if(goal_value_sum/num_goal_values > goal_max){
-                    // set status leds
-                    SetPin(red_led_pin, 0);
-                    SetPin(green_led_pin, 0);
-                    SetPin(blue_led_pin, 1);
                     // turn off intake
                     SetMotor(in_motor, 0);
                     SetMotor(brush_motor, 0);
@@ -187,15 +187,26 @@ goal_drive_time){ // score
                     SetMotor(left_motor, -1);
                     SetMotor(right_motor, 1);
                     Wait(1.5);
+                    // jitter and score
+                    SetMotor(in_motor, 1);
+                    SetMotor(in_motor, 1);
+                    SetMotor(left_motor, 1);
+                    SetMotor(right_motor, 1);
+                    Wait(2);
                     // score
-                    SetMotor(left_motor, 0);
-                    SetMotor(right_motor, 0);
+                    SetMotor(in_motor, 0);
+                    SetMotor(in_motor, 0);
+                    SetMotor(left_motor, -1);
+                    SetMotor(right_motor, -1);
                     if(side){
                         SetServo(release_servo, release_marbles);
                     }else{
                         SetServo(release_servo, release_pp_balls);
                     }
-                    Wait(3);
+                    Wait(2.5);
+                    SetMotor(left_motor, 1);
+                    SetMotor(right_motor, 1);
+                    Wait(0.5);
                     SetServo(release_servo, release_nothing);
                     // turn right
                     SetMotor(left_motor, 1);
@@ -204,17 +215,17 @@ goal_drive_time){ // score
                     // turn intake on
                     SetMotor(in_motor, 1);
                     SetMotor(brush_motor, 1);
-                    // set status leds
-                    SetPin(blue_led_pin, 0);
-                    if(side){
-                        SetPin(green_led_pin, 0);
-                        SetPin(red_led_pin, 1);
-                    }else{
-                        SetPin(green_led_pin, 1);
-                        SetPin(red_led_pin, 0);
-                    }
                     side = !side;
                     last_score_time = GetTime();
+                }
+                // set status leds
+                SetPin(blue_led_pin, 0);
+                if(side){
+                    SetPin(green_led_pin, 0);
+                    SetPin(red_led_pin, 1);
+                }else{
+                    SetPin(green_led_pin, 1);
+                    SetPin(red_led_pin, 0);
                 }
                 in_goal = 0;
             }else{ // follow wall
