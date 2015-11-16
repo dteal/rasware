@@ -11,7 +11,14 @@
  * This program assumes the robot is placed in front of its goal
  * facing right. It runs a loop in which it follows the wall on
  * the right-hand side with the intake runing, and pauses to score
- * whenever the third IR sensor detects a goal.
+ * whenever the third IR sensor detects a goal by its difference from
+ * the normal side IR sensor.
+ *
+ * Sensor values are continually averaged for more reliable values.
+ * Additionally, several sanity checks are in place: after a goal is
+ * detected, it must be present (on average) for some time before
+ * triggering a scoring response. This avoids false positives. Also,
+ * there is a minimum time between different goals that must be met.
  *
  * Authors: Yazan Alatrach, Angelique Bautista, Daniela Barrios,
  *          Angelique Bautista, Shrikar Murthy, and Daniel Teal.
@@ -39,9 +46,7 @@ tADC * side_ir_sensor;
 tADC * front_ir_sensor;
 tADC * goal_ir_sensor;
 
-tPin * red_led;
-tPWM * green_led;
-tPWM * blue_led;
+//tPWM * speaker;
 
 // define pin connections
 #define left_motor_pin PIN_B7
@@ -57,6 +62,8 @@ tPWM * blue_led;
 #define red_led_pin PIN_F1
 #define green_led_pin PIN_F3
 #define blue_led_pin PIN_F2
+
+#define speaker_pin PIN_D3
 
 // magic numbers
 float release_marbles = 1; // servo position to release marbles
@@ -103,6 +110,9 @@ int main(void){
 
     // turn on status led
     SetPin(green_led_pin, 1);
+
+    //speaker = InitializePWM(speaker_pin, 600);
+    //SetPWM(speaker, 0.5, 0);
 
     #ifdef WAIT_FOR_BUTTON_TO_START
         // wait for button press
@@ -187,13 +197,13 @@ goal_drive_time){ // score
                     SetMotor(left_motor, -1);
                     SetMotor(right_motor, 1);
                     Wait(1.5);
-                    // jitter and score
+                    // drive away from goal
                     SetMotor(in_motor, 1);
                     //SetMotor(brush_motor, 1);
                     SetMotor(left_motor, 1);
                     SetMotor(right_motor, 1);
                     Wait(2);
-                    // score
+                    // open hatch, run into goal
                     SetMotor(in_motor, 0);
                     //SetMotor(brush_motor, 0);
                     SetMotor(left_motor, -1);
@@ -204,6 +214,7 @@ goal_drive_time){ // score
                         SetServo(release_servo, release_pp_balls);
                     }
                     Wait(2.5);
+                    // drive back away from goal
                     SetMotor(left_motor, 1);
                     SetMotor(right_motor, 1);
                     Wait(0.5);
@@ -212,7 +223,7 @@ goal_drive_time){ // score
                     SetMotor(left_motor, 1);
                     SetMotor(right_motor, -1);
                     Wait(1.5);
-                    // turn intake on
+                    // turn intake on and continue
                     SetMotor(in_motor, 1);
                     SetMotor(brush_motor, 1);
                     side = !side;
