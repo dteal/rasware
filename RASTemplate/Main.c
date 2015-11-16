@@ -53,14 +53,6 @@ tPWM * blue_led;
 #define side_ir_sensor_pin PIN_E5
 #define front_ir_sensor_pin PIN_E4
 #define goal_ir_sensor_pin PIN_B4
-#define ls_pin_1 PIN_B4
-#define ls_pin_2 PIN_E3
-#define ls_pin_3 PIN_E2
-#define ls_pin_4 PIN_E1
-#define ls_pin_5 PIN_D3
-#define ls_pin_6 PIN_D2
-#define ls_pin_7 PIN_D1
-#define ls_pin_8 PIN_D0
 
 #define red_led_pin PIN_F1
 #define green_led_pin PIN_F3
@@ -74,15 +66,17 @@ float side_max = 0.93; // distance to side wall
 float front_max = 0.7; // distance to front wall
 float goal_max = 0.2; // difference in between goal/wall distance
 #define AVG_LEN 1000 // number of measurements averaged
+float goal_drive_time = 10;
 
 // global variables
 int running = 0; // tracks state of program
 int side = 0; // tracks current side of field
-long time = 0;
+int reset_ir_flag = 1;
 float front_avg[AVG_LEN] = {};
 float side_avg[AVG_LEN] = {};
 float goal_avg[AVG_LEN] = {};
 int avg_idx = 0;
+float goal_detect_time = 0;
 
 // function forward declarations
 void initialize_pins(); // initializes io components
@@ -90,6 +84,7 @@ void react_to_button(); // triggers on button press
 void dispense(); // scores balls in goal
 float coerce(float n, float min, float max, float val);
 float average(float * array, int length);
+void fill_array(float * array, int length, float value);
 
 // main function
 int main(void){
@@ -113,6 +108,9 @@ int main(void){
     SetMotor(in_motor, 1);
     SetMotor(brush_motor, 1);
 
+    // initialize timing variable
+    goal_detect_time = GetTime();
+
     // main loop
     while(1){
         if(running){
@@ -126,24 +124,68 @@ int main(void){
             front_value = coerce(front_value, 0, 1, front_avg[avg_idx]);
             goal_value = coerce(goal_value, 0, 1, goal_avg[avg_idx]);
 
-            // average values
-            avg_idx++;
-            if(avg_idx>=AVG_LEN){
-                avg_idx=0;
-            }
-            side_avg[avg_idx] = side_value;
-            front_avg[avg_idx] = front_value;
-            goal_avg[avg_idx] = goal_value;
-            float side_dist = average(side_avg, AVG_LEN);
-            float front_dist = average(front_avg, AVG_LEN);
-            float goal_dist = average(goal_avg, AVG_LEN);
-
-            if(!(time%100)){
-              Printf("IR:\t%f\t%f\t%f\n",side_dist,front_dist,goal_dist);
+            float side_dist = 0;
+            float front_dist = 0;
+            float goal_dist = 0;
+            if(reset_ir_flag){
+                // initialize averaging arrays to values
+                fill_array(side_avg, AVG_LEN, side_value);
+                fill_array(front_avg, AVG_LEN, front_value);
+                fill_array(goal_avg, AVG_LEN, goal_value);
+                reset_ir_flag = 0;
+                side_dist = side_value;
+                front_dist = front_value;
+                goal_dist = goal_value;
+            }else{
+                // average values
+                avg_idx++;
+                if(avg_idx>=AVG_LEN){
+                    avg_idx=0;
+                }
+                side_avg[avg_idx] = side_value;
+                front_avg[avg_idx] = front_value;
+                goal_avg[avg_idx] = goal_value;
+                side_dist = average(side_avg, AVG_LEN);
+                front_dist = average(front_avg, AVG_LEN);
+                goal_dist = average(goal_avg, AVG_LEN);
             }
 
             // score or follow wall
-            if(side_value - goal_value > goal_max){
+            if(side_value - goal_value > goal_max && 
+GetTime() - goal_detect_time > goal_drive_time){ // score
+                // set status leds
+                SetPin(red_led_pin, 0);
+                SetPin(green_led_pin, 0);
+                SetPin(blue_led_pin, 1);
+                // drive to center of goal
+                SetMotor(left_motor, 1);
+                SetMotor(right_motor, 1);
+                Wait(2);
+                // turn off intake
+                SetMotor(in_motor, 0);
+                SetMotor(brush_motor, 0);
+                // turn left
+                SetMotor(left_motor, -1);
+                SetMotor(right_motor, 1);
+                Wait(1.5);
+                // score
+                SetMotor(left_motor, 0);
+                SetMotor(right_motor, 0);
+                if(side){
+                    SetServo(release_servo, release_marbles);
+                }else{
+                    SetServo(release_servo, release_pp_balls);
+                }
+                Wait(3);
+                SetServo(release_servo, release_nothing);
+                // turn right
+                SetMotor(left_motor, 1);
+                SetMotor(right_motor, -1);
+                Wait(1.5);
+                // turn intake on
+                SetMotor(in_motor, 1);
+                SetMotor(brush_motor, 1);
+                // set status leds
                 SetPin(blue_led_pin, 0);
                 if(side){
                     SetPin(green_led_pin, 0);
@@ -153,7 +195,8 @@ int main(void){
                     SetPin(red_led_pin, 0);
                 }
                 side = !side;
-            }else{
+                goal_detect_time = GetTime();
+            }else{ // follow wall
                 if(side_value > side_max || front_value > front_max){
                     SetMotor(left_motor, -1);
                 }else{
@@ -161,55 +204,8 @@ int main(void){
                 }
                 SetMotor(right_motor, 1);
             }
-        time++;
         }
     }
-}
-
-void dispense(){
-    // change leds to incidate state
-    SetPin(green_led_pin, 0);
-    SetPin(red_led_pin, 0);
-    SetPin(blue_led_pin, 1);
-
-    // drive to center of goal
-    SetMotor(left_motor, 1);
-    SetMotor(right_motor, 1);
-    //Wait(0.5);
-
-    // turn off intake and brush
-    SetMotor(in_motor, 0);
-    SetMotor(brush_motor, 0);
-
-    // turn left
-    SetMotor(left_motor,-1);
-    SetMotor(right_motor,1);
-    //Wait(1.5);
-
-    // release balls
-    SetMotor(left_motor, 0);
-    SetMotor(right_motor, 0);
-    if(side){
-        //SetServo(release_servo, release_marbles);
-    }else{
-        //SetServo(release_servo, release_pp_balls);
-    }
-    //Wait(3);
-    //SetServo(release_servo, release_nothing);
-
-    // turn right
-    SetMotor(left_motor, 1);
-    SetMotor(right_motor,-1);
-    //Wait(1.5);
-
-    // drive past goal
-    SetMotor(left_motor, 1);
-    SetMotor(right_motor, 1);
-    SetMotor(in_motor, 1);
-    SetMotor(brush_motor, 1);
-    //Wait(2);
-
-    side = !side;
 }
 
 // intialize io objects
@@ -245,6 +241,12 @@ float average(float * array, int length){
     }
     count /= length;
     return count;
+}
+
+void fill_array(float * array, int length, float value){
+    for(int i = 0; i < length; i++){
+        array[i] = value;
+    }
 }
 
 /* end of program */
