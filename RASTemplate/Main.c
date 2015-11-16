@@ -189,13 +189,13 @@ goal_drive_time){ // score
                     Wait(1.5);
                     // jitter and score
                     SetMotor(in_motor, 1);
-                    SetMotor(in_motor, 1);
+                    //SetMotor(brush_motor, 1);
                     SetMotor(left_motor, 1);
                     SetMotor(right_motor, 1);
                     Wait(2);
                     // score
                     SetMotor(in_motor, 0);
-                    SetMotor(in_motor, 0);
+                    //SetMotor(brush_motor, 0);
                     SetMotor(left_motor, -1);
                     SetMotor(right_motor, -1);
                     if(side){
