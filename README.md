@@ -17,6 +17,7 @@ This program assumes the robot is placed in front of its goal facing right. It r
 
 Sensor values are continually averaged for more reliable values. Additionally, several sanity checks are in place: after a goal is detected, it must be present (on average) for some time before triggering a scoring response. This avoids false positives. Also, there is a minimum time constraint between different goals that must be met before scoring.
 
+A video of the final match is on [YouTube](https://youtu.be/ebt6csuU3t4?t=10s).
 Mechanical CAD files for Ultron may be found on [GrabCAD](https://grabcad.com/library/ultron-1).
 
 Robotathon Setup Instructions
