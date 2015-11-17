@@ -1,6 +1,7 @@
 Rasware
 =======
 
+![](https://raw.githubusercontent.com/dteal/rasware/master/robot.jpg "Ultron 2015")
 
 Description
 -----------
