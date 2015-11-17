@@ -62,6 +62,7 @@ float front_max = 0.7; // distance to front wall
 float goal_max = 0.3; // difference in between goal/wall distance
 #define AVG_LEN 1000 // number of measurements averaged
 #define WAIT_FOR_BUTTON_TO_START
+float side_to_can = 0.4;
 
 // global variables
 int running = 0; // tracks state of program
@@ -70,6 +71,7 @@ float front_avg[AVG_LEN] = {}; // averages front ir sensor values
 float side_avg[AVG_LEN] = {}; // averages side ir sensor values
 float goal_avg[AVG_LEN] = {}; // averages goal ir sensor values
 int avg_idx = 0; // keepts track of current position in averaging arrays
+float left_motor_power = -1;
 
 // function forward declarations
 void initialize_pins(); // initializes io components
@@ -136,6 +138,17 @@ int main(void){
                 side_dist = average(side_avg, AVG_LEN);
                 front_dist = average(front_avg, AVG_LEN);
                 goal_dist = average(goal_avg, AVG_LEN);
+            }
+
+            SetMotor(right_motor, 1);
+            if(GetTimeUS()/1000){
+                left_motor_power += 0.1;
+            }
+            SetMotor(left_motor, left_motor_power);
+
+            if(side_dist > side_to_can){
+                SetMotor(right_motor, 0.5);
+                SetMotor(left_motor, 1);
             }
 
             // follow wall

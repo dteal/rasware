@@ -18,7 +18,8 @@
  * Additionally, several sanity checks are in place: after a goal is
  * detected, it must be present (on average) for some time before
  * triggering a scoring response. This avoids false positives. Also,
- * there is a minimum time between different goals that must be met.
+ * there is a minimum time constraint between different goals that
+ * must be met before scoring.
  *
  * Authors: Yazan Alatrach, Angelique Bautista, Daniela Barrios,
  *          Angelique Bautista, Shrikar Murthy, and Daniel Teal.
