@@ -1,6 +1,7 @@
 Rasware
 =======
 
+![](https://raw.githubusercontent.com/dteal/rasware/master/robot.jpg "Ultron 2015")
 
 Description
 -----------
@@ -8,6 +9,13 @@ Description
 Rasware is a generic robotics library project for the EK-LM4F120XL Stellaris Launchpad, built on top of StellarisWare. It is intended to be used for UT RAS's Robotathon competition as well as general purpose robotics projects.
 Authored by the IEEE - Robotics and Automation Society Student Branch at the University of Texas at Austin. For documentation, see Rasware's Github [wiki](https://github.com/ut-ras/Rasware/wiki).
 
+This fork contains the source code for the robot "Ultron" built for the fall 2015 Robotathon competition.
+
+The robot has a left and right drive motor, two intake motors, and one marble/ping-pong ball release motor. It also uses three IR distance sensors.
+
+This program assumes the robot is placed in front of its goal facing right. It runs a loop in which it follows the wall on the right-hand side with the intake runing, and pauses to score whenever the third IR sensor detects a goal by its difference from the normal side IR sensor.
+
+Sensor values are continually averaged for more reliable values. Additionally, several sanity checks are in place: after a goal is detected, it must be present (on average) for some time before triggering a scoring response. This avoids false positives. Also, there is a minimum time constraint between different goals that must be met before scoring.
 
 Robotathon Setup Instructions
 -----------------------------
